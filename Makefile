@@ -13,8 +13,9 @@ endif
 
 BOOT_BIN := $(BUILD_DIR)/artifacts/boot.bin
 KERNEL_ELF := $(BUILD_DIR)/artifacts/kernel.elf
+FLOPPY_IMG := $(BUILD_DIR)/artifacts/sOS.img
 
-.PHONY: all configure build boot kernel run debug check clean distclean help
+.PHONY: all configure build boot kernel run debug check clean distclean help floppy inspect-floppy
 
 all: build
 
@@ -30,6 +31,12 @@ boot: configure
 kernel: configure
 	$(CMAKE) --build $(BUILD_DIR) --target kernel.elf
 
+floppy: configure
+	$(CMAKE) --build $(BUILD_DIR) --target floppy
+
+inspect-floppy: floppy
+	file $(BUILD_DIR)/artifacts/sOS.img
+	mdir -i $(BUILD_DIR)artifacts/sOS.img ::
 
 check:
 	@test -f "$(BOOT_BIN)" || { echo "Errore: boot sector non trovato"; exit 1; }
@@ -37,11 +44,13 @@ check:
 	@echo "Boot sector OK (512 byte)"
 	@if [ -f "$(KERNEL_ELF)" ]; then file "$(KERNEL_ELF)"; else echo "Kernel ELF non ancora generato"; fi
 
-run: build check
-	$(QEMU) $(QEMU_FLAGS) $(QEMU_DISPLAY) -drive format=raw,file="$(BOOT_BIN)" --boot c
+run: build check floppy
+	$(QEMU) $(QEMU_FLAGS) $(QEMU_DISPLAY) -drive format=raw,if=floppy,file="$(FLOPPY_IMG)"
+	# $(QEMU) $(QEMU_FLAGS) $(QEMU_DISPLAY) -drive format=raw,file="$(BOOT_BIN)"
 
-debug: build check
-	$(QEMU) $(QEMU_FLAGS) $(QEMU_DISPLAY) -drive format=raw,file="$(BOOT_BIN)" --boot c -S -s
+debug: build check floppy
+	# $(QEMU) $(QEMU_FLAGS) $(QEMU_DISPLAY) -drive format=raw,file="$(BOOT_BIN)" -S -s
+	$(QEMU) $(QEMU_FLAGS) $(QEMU_DISPLAY) -drive format=raw,if=floppy,file="$(FLOPPY_IMG)" -S -s
 
 clean:
 	$(CMAKE) --build $(BUILD_DIR) --target clean
