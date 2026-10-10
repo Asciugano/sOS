@@ -3,6 +3,14 @@ PRESET := debug
 CMAKE := cmake
 QEMU := qemu-system-x86_64
 
+QEMU_FLAGS := -machine pc -m 128M
+
+ifeq ($(FULL_SCREEN),1)
+QEMU_DISPLAY := -display cocoa,full-screen=on,zoom-to-fit=on
+else
+QEMU_DISPLAY := -display cocoa,zoom-to-fit=on
+endif
+
 BOOT_BIN := $(BUILD_DIR)/artifacts/boot.bin
 KERNEL_ELF := $(BUILD_DIR)/artifacts/kernel.elf
 
@@ -30,10 +38,10 @@ check:
 	@if [ -f "$(KERNEL_ELF)" ]; then file "$(KERNEL_ELF)"; else echo "Kernel ELF non ancora generato"; fi
 
 run: build check
-	$(QEMU) -machine pc -m 128M -drive format=raw,file="$(BOOT_BIN)"
+	$(QEMU) $(QEMU_FLAGS) $(QEMU_DISPLAY) -drive format=raw,file="$(BOOT_BIN)" --boot c
 
 debug: build check
-	$(QEMU) -machine pc -m 128M -drive format=raw,file="$(BOOT_BIN)" -S -s
+	$(QEMU) $(QEMU_FLAGS) $(QEMU_DISPLAY) -drive format=raw,file="$(BOOT_BIN)" --boot c -S -s
 
 clean:
 	$(CMAKE) --build $(BUILD_DIR) --target clean
