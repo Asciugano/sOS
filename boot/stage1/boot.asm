@@ -106,11 +106,9 @@ disk_read:
 
   ; WARN: read failed
   popa
-  dec di
-  jz .fail
 
-  call disk_read
-  jmp .retry
+  call disk_reset
+  jnz .retry
 
 .fail:
   jmp floppy_error

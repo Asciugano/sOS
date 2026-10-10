@@ -35,7 +35,7 @@ floppy: configure
 	$(CMAKE) --build $(BUILD_DIR) --target floppy
 
 inspect-floppy: floppy
-	file $(BUILD_DIR)artifacts/sOS.img
+	file $(BUILD_DIR)/artifacts/sOS.img
 	mdir -i $(BUILD_DIR)artifacts/sOS.img ::
 
 check:
