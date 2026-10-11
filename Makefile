@@ -6,8 +6,6 @@ QEMU_FLAGS := -machine pc -m 128M
 
 ifeq ($(FULL_SCREEN),1)
 	QEMU_DISPLAY := -display cocoa,full-screen=on,zoom-to-fit=on
-else
-	QEMU_DISPLAY := -display cocoa,zoom-to-fit=on
 endif
 
 SRC_DIR=src
@@ -67,4 +65,4 @@ clean:
 	rm -rf $(BUILD_DIR)/*
 
 run: floppy_image
-	$(QEMU) $(QEMU_FLAGS) $(QEMU_DISPLAY) -drive format=raw,if=floppy,file="$(BUILD_DIR)/main_floppy.img"
+	$(QEMU) -fda $(BUILD_DIR)/main_floppy.img $(QEMU_DISPLAY)
