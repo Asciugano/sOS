@@ -53,7 +53,7 @@ typedef struct {
 BootSector g_BootSector;
 uint8_t *g_Fat = NULL;
 DirectoryEntry *g_RootDirectory = NULL;
-uint32_t g_RootDirecotryEnd;
+uint32_t g_RootDirectoryEnd;
 
 bool readBootSector(FILE *disk) {
   return fread(&g_BootSector, sizeof(g_BootSector), 1, disk) > 0;
@@ -85,7 +85,7 @@ bool readRootDirectory(FILE *disk) {
   if (size % g_BootSector.BytesPerSector > 0)
     sectors++;
 
-  g_RootDirecotryEnd = lba + sectors;
+  g_RootDirectoryEnd = lba + sectors;
   g_RootDirectory =
       (DirectoryEntry *)malloc(sectors * g_BootSector.BytesPerSector);
 
@@ -106,7 +106,7 @@ bool readFile(DirectoryEntry *fileEntry, FILE *disk, uint8_t *outputBuffer) {
   uint16_t currentCluster = fileEntry->FirstClusterLow;
 
   do {
-    uint32_t lba = g_RootDirecotryEnd +
+    uint32_t lba = g_RootDirectoryEnd +
                    (currentCluster - 2) * g_BootSector.SectorPerCluster;
     ok = ok &&
          readSectors(disk, lba, g_BootSector.SectorPerCluster, outputBuffer);
