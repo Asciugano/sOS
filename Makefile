@@ -1,73 +1,70 @@
-BUILD_DIR := build
-PRESET := debug
-CMAKE := cmake
+ASM=nasm
+CC=gcc
 QEMU := qemu-system-x86_64
 
 QEMU_FLAGS := -machine pc -m 128M
 
 ifeq ($(FULL_SCREEN),1)
-QEMU_DISPLAY := -display cocoa,full-screen=on,zoom-to-fit=on
+	QEMU_DISPLAY := -display cocoa,full-screen=on,zoom-to-fit=on
 else
-QEMU_DISPLAY := -display cocoa,zoom-to-fit=on
+	QEMU_DISPLAY := -display cocoa,zoom-to-fit=on
 endif
 
-BOOT_BIN := $(BUILD_DIR)/artifacts/boot.bin
-KERNEL_ELF := $(BUILD_DIR)/artifacts/kernel.elf
-FLOPPY_IMG := $(BUILD_DIR)/artifacts/sOS.img
+SRC_DIR=src
+TOOLS_DIR=tools
+BUILD_DIR=build
 
-.PHONY: all configure build boot kernel run debug check clean distclean help floppy inspect-floppy
+.PHONY: all floppy_image kernel bootloader clean always tools_fat
 
-all: build
+all: floppy_image tools_fat
 
-configure:
-	$(CMAKE) --preset $(PRESET)
+#
+# Floppy image
+#
+floppy_image: $(BUILD_DIR)/main_floppy.img
 
-build: configure
-	$(CMAKE) --build --preset $(PRESET)
+$(BUILD_DIR)/main_floppy.img: bootloader kernel
+	dd if=/dev/zero of=$(BUILD_DIR)/main_floppy.img bs=512 count=2880
+	mkfs.fat -F 12 -n "NBOS" $(BUILD_DIR)/main_floppy.img
+	dd if=$(BUILD_DIR)/bootloader.bin of=$(BUILD_DIR)/main_floppy.img conv=notrunc
+	mcopy -i $(BUILD_DIR)/main_floppy.img $(BUILD_DIR)/kernel.bin "::kernel.bin"
+	mcopy -i $(BUILD_DIR)/main_floppy.img test.txt "::test.txt"
 
-boot: configure
-	$(CMAKE) --build $(BUILD_DIR) --target bootsector
+#
+# Bootloader
+#
+bootloader: $(BUILD_DIR)/bootloader.bin
 
-kernel: configure
-	$(CMAKE) --build $(BUILD_DIR) --target kernel.elf
+$(BUILD_DIR)/bootloader.bin: always
+	$(ASM) $(SRC_DIR)/bootloader/boot.asm -f bin -o $(BUILD_DIR)/bootloader.bin
 
-floppy: configure
-	$(CMAKE) --build $(BUILD_DIR) --target floppy
+#
+# Kernel
+#
+kernel: $(BUILD_DIR)/kernel.bin
 
-inspect-floppy: floppy
-	file $(BUILD_DIR)/artifacts/sOS.img
-	mdir -i $(BUILD_DIR)artifacts/sOS.img ::
+$(BUILD_DIR)/kernel.bin: always
+	$(ASM) $(SRC_DIR)/kernel/main.asm -f bin -o $(BUILD_DIR)/kernel.bin
 
-check:
-	@test -f "$(BOOT_BIN)" || { echo "Errore: boot sector non trovato"; exit 1; }
-	@test "$$(wc -c < "$(BOOT_BIN)" | tr -d ' ')" = "512" || { echo "Errore: boot sector diverso da 512 byte"; exit 1; }
-	@echo "Boot sector OK (512 byte)"
-	@if [ -f "$(KERNEL_ELF)" ]; then file "$(KERNEL_ELF)"; else echo "Kernel ELF non ancora generato"; fi
+#
+# Tools
+#
+tools_fat: $(BUILD_DIR)/tools/fat
+$(BUILD_DIR)/tools/fat: always $(TOOLS_DIR)/fat/fat.c
+	mkdir -p $(BUILD_DIR)/tools
+	$(CC) -g -o $(BUILD_DIR)/tools/fat $(TOOLS_DIR)/fat/fat.c
 
-run: build check floppy
-	$(QEMU) $(QEMU_FLAGS) $(QEMU_DISPLAY) -drive format=raw,if=floppy,file="$(FLOPPY_IMG)"
-	# $(QEMU) $(QEMU_FLAGS) $(QEMU_DISPLAY) -drive format=raw,file="$(BOOT_BIN)"
+#
+# Always
+#
+always:
+	mkdir -p $(BUILD_DIR)
 
-debug: build check floppy
-	# $(QEMU) $(QEMU_FLAGS) $(QEMU_DISPLAY) -drive format=raw,file="$(BOOT_BIN)" -S -s
-	$(QEMU) $(QEMU_FLAGS) $(QEMU_DISPLAY) -drive format=raw,if=floppy,file="$(FLOPPY_IMG)" -S -s
-
+#
+# Clean
+#
 clean:
-	$(CMAKE) --build $(BUILD_DIR) --target clean
+	rm -rf $(BUILD_DIR)/*
 
-
-distclean:
-	rm -rf "$(BUILD_DIR)"
-
-help:
-	@echo "sOS - comandi disponibili"
-	@echo "  make / make build  Configura e compila il progetto"
-	@echo "  make configure     Configura CMake"
-	@echo "  make boot          Compila il boot sector"
-	@echo "  make kernel        Compila il kernel"
-	@echo "  make check         Verifica gli artefatti"
-	@echo "  make run           Avvia il boot sector in QEMU"
-	@echo "  make debug         Avvia QEMU in attesa di GDB"
-	@echo "  make clean         Pulisce gli artefatti di compilazione"
-	@echo "  make distclean     Elimina tutta la directory build"
-	@echo "  make help          Mostra questo messaggio"
+run: floppy_image
+	$(QEMU) $(QEMU_FLAGS) $(QEMU_DISPLAY) -drive format=raw,if=floppy,file="$(BUILD_DIR)/main_floppy.img"
