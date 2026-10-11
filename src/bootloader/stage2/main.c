@@ -3,7 +3,7 @@
 
 void _cdecl cstart_(uint16_t bootDrive) {
   printf("Hello world from C!\n");
-  printf("5 + 5 = %d\n", 5 + 5);
+  printf("5 + 5 = %d", 5 + 5);
   for (;;)
     ;
 }

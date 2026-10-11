@@ -29,14 +29,15 @@ void puts_f(const char far *str) {
 #define PRINTF_LENGTH_LONG 3
 #define PRINTF_LENGTH_LONG_LONG 4
 
-int *printf_number(int *argp, int length, bool sign, int radix);
+int *printf_number(int *argp, int length, boolean sign, int radix);
 
 void _cdecl printf(const char *fmt, ...) {
-  int *argp = (int *)&fmt;
+  const char *fmt_ptr = (const char *)&fmt;
+  int *argp = (int *)fmt_ptr + 1;
   int state = PRINTF_STATE_NORMAL;
   int length = PRINTF_LENGTH_DEFAULT;
   int radix = 10;
-  bool sign = false;
+  boolean sign = false;
 
   argp++;
 
@@ -152,7 +153,7 @@ void _cdecl printf(const char *fmt, ...) {
 
 const char g_HexChars[] = "0123456789abcdef";
 
-int *printf_number(int *argp, int length, bool sign, int radix) {
+int *printf_number(int *argp, int length, boolean sign, int radix) {
   char buffer[32];
   unsigned long long number;
   int number_sign = 1;
