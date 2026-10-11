@@ -1,0 +1,32 @@
+CompileFlags:
+  Add:
+    - -ffreestanding
+    - -m16
+    - -D__WATCOMC__
+    # Parole chiave Watcom che clang non conosce: le rendiamo vuote solo per l'editor
+    - -D__far=
+    - -D__near=
+    - -D__huge=
+    - -D__interrupt=
+    - -D__cdecl=
+    - -D__watcall=
+    - -D__saveregs=
+    - -D_cdecl=
+    - -D_Cdecl=
+    - -Wno-unknown-pragmas
+    - -Wno-ignored-pragmas
+    - -Wno-unknown-attributes
+  Remove:
+    - -4
+    - -d3
+    - -ms
+    - -zl
+    - -zq
+    - -za99
+    - -fo=*
+    - -fr=*
+Diagnostics:
+  Suppress:
+    - pp_file_not_found
+    - -isystem
+    - tools/watcom/h
