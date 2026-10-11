@@ -2,7 +2,8 @@
 #include "stdio.h"
 
 void _cdecl cstart_(uint16_t bootDrive) {
-  puts("Hello world from C!");
+  printf("Hello world from C!\n");
+  printf("5 + 5 = %d\n", 5 + 5);
   for (;;)
     ;
 }
