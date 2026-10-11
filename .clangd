@@ -3,7 +3,6 @@ CompileFlags:
     - -ffreestanding
     - -m16
     - -D__WATCOMC__
-    # Parole chiave Watcom che clang non conosce: le rendiamo vuote solo per l'editor
     - -D__far=
     - -D__near=
     - -D__huge=
@@ -13,6 +12,20 @@ CompileFlags:
     - -D__saveregs=
     - -D_cdecl=
     - -D_Cdecl=
+    - -Wno-unknown-pragmas
+    - -Wno-ignored-pragmas
+    - -Wno-unknown-attributes
+    - -Dfar=
+    - -D_far=
+    - -Dnear=
+    - -D_near=
+    - -Dhuge=
+    - -D_huge=
+    - -D_cdecl=
+    - -D__cdecl=
+    - -Dcdecl=
+    - -D__interrupt=
+    - -D_interrupt=
     - -Wno-unknown-pragmas
     - -Wno-ignored-pragmas
     - -Wno-unknown-attributes
