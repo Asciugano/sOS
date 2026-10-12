@@ -4,6 +4,12 @@ CC16=$(abspath $(TOOLS_DIR)/wc.sh) wcc
 LD16=$(abspath $(TOOLS_DIR)/wc.sh) wlink
 export ASM CC16 LD16
 
+QEMU := qemu-system-x86_64
+
+ifeq ($(FULL_SCREEN),1)
+	QEMU_DISPLAY := -display cocoa,full-screen=on,zoom-to-fit=on
+endif
+
 SRC_DIR=src
 TOOLS_DIR=tools
 BUILD_DIR=build
@@ -72,6 +78,9 @@ clean:
 	$(MAKE) -C $(SRC_DIR)/bootloader/stage2 BUILD_DIR=$(abspath $(BUILD_DIR)) clean
 	$(MAKE) -C $(SRC_DIR)/kernel BUILD_DIR=$(abspath $(BUILD_DIR)) clean
 	rm -rf $(BUILD_DIR)/*
+
+debug: floppy_image
+	$(QEMU) -fda $(BUILD_DIR)/main_floppy.img $(QEMU_DISPLAY) -s -S
 
 run: floppy_image
 	$(QEMU) -fda $(BUILD_DIR)/main_floppy.img $(QEMU_DISPLAY)

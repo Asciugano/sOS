@@ -16,15 +16,15 @@ section _TEXT class=CODE
 global __U4D
 __U4D:
   shl edx, 16         ; INFO: dx to upper half of edx
-  mov dx, ax          ; INFO: edx = dividend
-  mov eax, edx        ; INFO: eax = dividend
+  mov dx, ax          ; INFO: edx - dividend
+  mov eax, edx        ; INFO: eax - dividend
   xor edx, edx
 
   shl ecx, 16         ; INFO: cx to upper half of ecx
-  mov cx, bx          ; INFO: ecx = divisor
+  mov cx, bx          ; INFO: ecx - divisor
 
-  div ecx             ; INFO: eax = quot, edx = remainder
-  mov ebx, ecx
+  div ecx             ; INFO: eax - quot, edx - remainder
+  mov ebx, edx
   mov ecx, edx
   shr ecx, 16
 
@@ -41,25 +41,25 @@ __U4D:
 ;                 CX;BX   integer M2
 ; Outputs:        DX;AX   product
 ; Volatile:       CX, BX destroyed
-
+;
 global __U4M
 __U4M:
-    shl edx, 16         ; INFO: dx to upper half of edx
-    mov dx, ax          ; INFO: m1 in edx
-    mov eax, edx        ; INFO: m1 in eax
+  shl edx, 16         ; INFO:  dx to upper half of edx
+  mov dx, ax          ; INFO:  m1 in edx
+  mov eax, edx        ; INFO:  m1 in eax
 
-    shl ecx, 16         ; INFO: cx to upper half of ecx
-    mov cx, bx          ; INFO: m2 in ecx
+  shl ecx, 16         ; INFO: cx to upper half of ecx
+  mov cx, bx          ; INFO: m2 in ecx
 
-    mul ecx             ; INFO: result in edx:eax (we only need eax)
-    mov edx, eax        ; INFO: move upper half to dx
-    shr edx, 16
+  mul ecx             ; INFO: result in edx:eax (we only need eax)
+  mov edx, eax        ; INFO: move upper half to dx
+  shr edx, 16
 
-    ret
+  ret
 
 ; INFO:
 ; void _cdecl x86_div64_32(uint64_t dividend, uint32_t divisor, uint64_t* quotientOut, uint32_t* remainderOut);
-
+;
 global _x86_div64_32
 _x86_div64_32:
 
@@ -99,7 +99,7 @@ _x86_div64_32:
 ; INFO:
 ; int 10h ah=0Eh
 ; args: character, page
-
+;
 global _x86_Video_WriteCharTeletype
 _x86_Video_WriteCharTeletype:
   
@@ -129,22 +129,24 @@ _x86_Video_WriteCharTeletype:
   pop bp
   ret
 
-; INFO:
-; boolean _cdecl x86_Disk_Reset(uint8_t drive);
 
+; INFO:
+; bool _cdecl x86_Disk_Reset(uint8_t drive);
+;
 global _x86_Disk_Reset
 _x86_Disk_Reset:
+
   ; INFO: make new call frame
   push bp             ; INFO: save old call frame
   mov bp, sp          ; INFO: initialize new call frame
 
   mov ah, 0
-  mov dl, [bp + 4]    ; INFO: dl = drive
+  mov dl, [bp + 4]    ; INFO: dl - drive
   stc
   int 13h
 
   mov ax, 1
-  sbb ax, 0           ; INFO: 1 = success, 0 = fail
+  sbb ax, 0           ; INFO: 1 on success, 0 on fail   
 
   ; INFO: restore old call frame
   mov sp, bp
@@ -153,43 +155,53 @@ _x86_Disk_Reset:
 
 
 ; INFO:
-; boolean _cdecl x86_Disk_Read(uint8_t drive, uint16_t cylinder, uint16_t sector,
-;                              uint16_t head, uint16_t count,
-;                              uint8_t far *dataOut);
-
+; bool _cdecl x86_Disk_Read(uint8_t drive,
+;                           uint16_t cylinder,
+;                           uint16_t sector,
+;                           uint16_t head,
+;                           uint8_t count,
+;                           void far * dataOut);
+;
 global _x86_Disk_Read
 _x86_Disk_Read:
+
   ; INFO: make new call frame
   push bp             ; INFO: save old call frame
   mov bp, sp          ; INFO: initialize new call frame
 
+  ; INFO: save modified regs
   push bx
   push es
 
-  mov dl, [bp + 4]    ; INFO: dl = drive
-  mov ch, [bp + 6]    ; INFO: ch = cylinder (lower 8 bits)
-  mov cl, [bp + 7]    ; INFO: ch = cylinder to bits 6-7
+  ; INFO: setup args
+  mov dl, [bp + 4]    ; INFO: dl - drive
+
+  mov ch, [bp + 6]    ; INFO: ch - cylinder (lower 8 bits)
+  mov cl, [bp + 7]    ; INFO: cl - cylinder to bits 6-7
   shl cl, 6
-
-  mov dh, [bp + 10]    ; INFO: dh = head
-
-  mov al, [bp + 8]   ; INFO: cl = sector to bits 0-5
+  
+  mov al, [bp + 8]    ; INFO: cl - sector to bits 0-5
   and al, 3Fh
   or cl, al
 
-  mov al, [bp + 12]   ; INFO: al = count
+  mov dh, [bp + 10]   ; INFO: dh - head
 
-  mov bx, [bp + 16]   ; INFO: es:bx = farpointer to data out
+  mov al, [bp + 12]   ; INFO: al - count
+
+  mov bx, [bp + 16]   ; INFO: es:bx - far pointer to data out
   mov es, bx
   mov bx, [bp + 14]
 
-  stc
+  ; INFO: call int13h
   mov ah, 02h
+  stc
   int 13h
 
+  ; INFO: set return value
   mov ax, 1
-  sbb ax, 0           ; INFO: 1 = success, 0 = fail
+  sbb ax, 0           ; INFO: 1 on success, 0 on fail   
 
+  ; INFO: restore regs
   pop es
   pop bx
 
@@ -200,39 +212,44 @@ _x86_Disk_Read:
 
 
 ; INFO:
-; boolean _cdecl x86_Disk_GetDriveParams(uint8_t drive, uint8_t *driveTypeOut,
-;                                     uint16_t *cylindersOut,
-;                                     uint16_t *sectorsOut, uint16_t *headsOut);
-
+; bool _cdecl x86_Disk_GetDriveParams(uint8_t drive,
+;                                     uint8_t* driveTypeOut,
+;                                     uint16_t* cylindersOut,
+;                                     uint16_t* sectorsOut,
+;                                     uint16_t* headsOut);
+;
 global _x86_Disk_GetDriveParams
 _x86_Disk_GetDriveParams:
+
   ; INFO: make new call frame
   push bp             ; INFO: save old call frame
   mov bp, sp          ; INFO: initialize new call frame
 
+  ; INFO: save regs
   push es
   push bx
   push si
   push di
 
-  mov dl, [bp + 4]    ; INFO: dl = disk drive
+  ; INFO: call int13h
+  mov dl, [bp + 4]    ; INFO: dl - disk drive
   mov ah, 08h
-  mov di, 0           ; INFO: es:di 0000:0000
+  mov di, 0           ; INFO: es:di - 0000:0000
   mov es, di
-
   stc
   int 13h
 
   mov ax, 1
   sbb ax, 0
 
+  ; INFO: out params
   mov si, [bp + 6]    ; INFO: drive type from bl
   mov [si], bl
 
-  mov bl, ch          ; INFO: cylinder - lower bits in ch
-  mov bh, cl          ; INFO: cylinder - upper bits in cl(6-7)
+  mov bl, ch          ; INFO: cylinders - lower bits in ch
+  mov bh, cl          ; INFO: cylinders - upper bits in cl (6-7)
   shr bh, 6
-  mov si, [bp + 8]    ; INFO: cylindersOut
+  mov si, [bp + 8]
   mov [si], bx
 
   xor ch, ch          ; INFO: sectors - lower 5 bits in cl
@@ -240,10 +257,11 @@ _x86_Disk_GetDriveParams:
   mov si, [bp + 10]
   mov [si], cx
 
-  mov ch, dh          ; INFO: heads = dh
+  mov cl, dh          ; INFO: heads - dh
   mov si, [bp + 12]
   mov [si], cx
 
+  ; INFO: restore regs
   pop di
   pop si
   pop bx
