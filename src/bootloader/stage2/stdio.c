@@ -32,8 +32,7 @@ void puts_f(const char far *str) {
 int *printf_number(int *argp, int length, boolean sign, int radix);
 
 void _cdecl printf(const char *fmt, ...) {
-  const char *fmt_ptr = (const char *)&fmt;
-  int *argp = (int *)fmt_ptr + 1;
+  int *argp = (int *)&fmt;
   int state = PRINTF_STATE_NORMAL;
   int length = PRINTF_LENGTH_DEFAULT;
   int radix = 10;
@@ -222,4 +221,15 @@ int *printf_number(int *argp, int length, boolean sign, int radix) {
     putc(buffer[pos]);
 
   return argp;
+}
+
+void print_buffer(const char *msg, const void far *buffer, uint16_t count) {
+  const uint8_t far *u8Buffer = (const uint8_t far *)buffer;
+
+  puts(msg);
+  for (uint16_t i = 0; i < count; i++) {
+    putc(g_HexChars[u8Buffer[i] >> 4]);
+    putc(g_HexChars[u8Buffer[i] & 0xF]);
+  }
+  puts("\r\n");
 }

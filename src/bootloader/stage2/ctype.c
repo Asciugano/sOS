@@ -1,0 +1,5 @@
+#include "ctype.h"
+
+boolean isLower(char chr) { return chr >= 'a' && chr <= 'z'; }
+
+char toupper(char chr) { return isLower(chr) ? (chr - 'a' + 'A') : chr; }
